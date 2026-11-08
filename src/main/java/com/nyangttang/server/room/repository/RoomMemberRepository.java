@@ -11,4 +11,6 @@ public interface RoomMemberRepository
     boolean existsByUser_Id(Long userId);
 
     List<RoomMember> findAllByRoom_IdOrderBySlotNoAsc(Long roomId);
+
+    java.util.Optional<RoomMember> findByUser_Id(Long userId);
 }
