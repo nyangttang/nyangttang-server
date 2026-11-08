@@ -59,7 +59,8 @@ public class StudyAccountingService {
                 Instant goalAt = stat.addCredit(slice.creditedMs(), slice.from());
                 if (goalAt != null) {
                     Map<String, Object> goal = action("GOAL", runtime, goalAt);
-                    goal.put("studyDate", slice.date().toString()); actions.add(goal);
+                    goal.put("studyDate", slice.date().toString());
+                    goal.put("goalSeconds", stat.getGoalSeconds()); actions.add(goal);
                 }
                 actions.addAll(movement.applyCredit(room, map, runtime, slice.creditedMs(), slice.to()));
             }
@@ -115,6 +116,31 @@ public class StudyAccountingService {
             start(room, map, runtime, now, now, actions);
         } else if (!actions.isEmpty()) record(room, map, now, StudyTimeline.date(now), actions);
         runtime.accountThrough(now);
+    }
+
+    // Caller settles elapsed study under the old goal first, holding the same room lock.
+    public DailyStudyStat updateGoal(Room room, RoomRuntime map, MemberRuntime runtime,
+                                     int seconds, Instant at) {
+        LocalDate date = StudyTimeline.date(at);
+        DailyStudyStat stat = stat(runtime.getMember(), date);
+        int previous = stat.getGoalSeconds();
+        if (previous == seconds && runtime.getMember().getDailyGoalSeconds() == seconds) return stat;
+        Instant firstAchievement = stat.changeGoalSeconds(seconds, at);
+        runtime.getMember().changeDailyGoalSeconds(seconds);
+        List<Map<String, Object>> actions = new ArrayList<>();
+        Map<String, Object> updated = action("GOAL_UPDATED", runtime, at);
+        updated.put("studyDate", date.toString());
+        updated.put("previousGoalSeconds", previous);
+        updated.put("dailyGoalSeconds", seconds);
+        actions.add(updated);
+        if (firstAchievement != null) {
+            Map<String, Object> goal = action("GOAL", runtime, firstAchievement);
+            goal.put("studyDate", date.toString());
+            goal.put("goalSeconds", seconds);
+            actions.add(goal);
+        }
+        record(room, map, at, date, actions);
+        return stat;
     }
 
     public void disconnect(Room room, RoomRuntime map, MemberRuntime runtime,

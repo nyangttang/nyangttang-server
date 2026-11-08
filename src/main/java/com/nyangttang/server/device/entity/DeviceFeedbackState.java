@@ -59,6 +59,11 @@ public class DeviceFeedbackState {
         return lastEvent();
     }
 
+    public void clearGoalEvent() {
+        if ("GOAL".equals(lastEventType)) lastEventType = null;
+        // Preserve the ID counter: firmware must never mistake a later event for an old one.
+    }
+
     public FaceEvent lastEvent() {
         return lastEventType == null ? null : new FaceEvent(lastEventId, lastEventType);
     }

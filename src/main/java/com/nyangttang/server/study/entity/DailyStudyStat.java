@@ -55,6 +55,20 @@ public class DailyStudyStat {
     public Integer getGoalSeconds() { return goalSeconds; }
     public Instant getGoalAchievedAt() { return goalAchievedAt; }
 
+    // The timestamp is historical: the first achievement of the day, even after raising the goal.
+    public boolean isGoalAchieved() { return creditedMs >= goalSeconds.longValue() * 1000; }
+
+    public Instant changeGoalSeconds(int seconds, Instant at) {
+        if (seconds < 30 || seconds > 43200) throw new IllegalArgumentException("목표는 30~43200초입니다.");
+        Objects.requireNonNull(at);
+        goalSeconds = seconds;
+        if (goalAchievedAt == null && isGoalAchieved()) {
+            goalAchievedAt = at;
+            return at;
+        }
+        return null;
+    }
+
     // Returns the exact first goal crossing time, or null if not newly reached.
     public Instant addCredit(long millis, Instant intervalStart) {
         if (millis < 0) throw new IllegalArgumentException("인정 시간은 음수일 수 없습니다.");

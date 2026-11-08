@@ -60,6 +60,11 @@ public class RoomMember {
         this.dailyGoalSeconds = dailyGoalSeconds;
     }
 
+    public void changeDailyGoalSeconds(int seconds) {
+        if (seconds < 30 || seconds > 43200) throw new IllegalArgumentException("목표는 30~43200초입니다.");
+        this.dailyGoalSeconds = seconds;
+    }
+
     public Long getId() { return id; }
     public Room getRoom() { return room; }
     public User getUser() { return user; }

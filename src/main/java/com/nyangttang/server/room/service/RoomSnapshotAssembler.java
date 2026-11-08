@@ -43,7 +43,7 @@ public class RoomSnapshotAssembler {
                     member.getSlotNo(), member.getCatName(), member.getCatColor(), state.getState(),
                     state.getX(), state.getY(), counts.getOrDefault(member.getId().toString(), 0),
                     target, credited, credited / 1000, (remaining + 999) / 1000,
-                    stat != null && stat.getGoalAchievedAt() != null));
+                    stat != null && stat.isGoalAchieved()));
         }
         return new RoomSnapshotResponse(1, room.getId().toString(), room.getName(), room.getMode(),
                 10, 10, map.getSnapshotVersion(), map.getLastEventSeq(), myMemberId, date, owners, people);

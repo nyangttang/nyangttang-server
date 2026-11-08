@@ -47,7 +47,7 @@ public class StudyQueryService {
             total = Math.addExact(total, millis);
             result.add(new DailyStudyResponse.Day(date, millis, millis / 1000,
                     stat == null ? null : stat.getGoalSeconds(),
-                    stat != null && stat.getGoalAchievedAt() != null));
+                    stat != null && stat.isGoalAchieved()));
         }
         return new DailyStudyResponse(from, to, "Asia/Seoul", total, List.copyOf(result));
     }

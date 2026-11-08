@@ -35,9 +35,9 @@ public class PhysicalDeviceService {
     private final Clock clock;
 
     public PhysicalDeviceService(RoomRepository rooms, RoomMemberRepository members,
-            RoomRuntimeRepository maps, MemberRuntimeRepository runtimes, DeviceRepository devices,
-            DeviceFeedbackStateRepository feedbackStates, DailyStudyStatRepository daily,
-            StudyAccountingService accounting, DeviceFeedbackService feedback, Clock clock) {
+                                 RoomRuntimeRepository maps, MemberRuntimeRepository runtimes, DeviceRepository devices,
+                                 DeviceFeedbackStateRepository feedbackStates, DailyStudyStatRepository daily,
+                                 StudyAccountingService accounting, DeviceFeedbackService feedback, Clock clock) {
         this.rooms = rooms; this.members = members; this.maps = maps; this.runtimes = runtimes;
         this.devices = devices; this.feedbackStates = feedbackStates; this.daily = daily;
         this.accounting = accounting; this.feedback = feedback; this.clock = clock;
@@ -104,7 +104,8 @@ public class PhysicalDeviceService {
         // distanceCm is diagnostic only. seat is the firmware's occupancy decision.
         var stat = daily.findByMember_IdAndStudyDate(member.getId(),
                 now.atZone(ZoneId.of("Asia/Seoul")).toLocalDate()).orElse(null);
-        var event = feedback.next(roomId, member.getId().toString(), cursor);
+        var event = feedback.next(roomId, member.getId().toString(), cursor,
+                now.atZone(ZoneId.of("Asia/Seoul")).toLocalDate(), stat != null && stat.isGoalAchieved());
         return PhysicalResponseFactory.create(runtime.getState(), map.getOwners(),
                 member.getId().toString(), stat == null ? member.getDailyGoalSeconds() : stat.getGoalSeconds(),
                 stat == null ? 0L : stat.getCreditedMs(), event);

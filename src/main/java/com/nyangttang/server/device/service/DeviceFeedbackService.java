@@ -18,7 +18,19 @@ public class DeviceFeedbackService {
     public DeviceFeedbackService(RoomEventRepository events) { this.events = events; }
 
     // Caller holds the room lock. Return one new expression per heartbeat.
+    public FaceEvent next(Long roomId, String memberId, DeviceFeedbackState cursor,
+                          java.time.LocalDate studyDate, boolean goalAchieved) {
+        if (!goalAchieved) cursor.clearGoalEvent();
+        return nextFiltered(roomId, memberId, cursor, action -> goalAchieved
+                && studyDate.toString().equals(action.get("studyDate")));
+    }
+
     public FaceEvent next(Long roomId, String memberId, DeviceFeedbackState cursor) {
+        return nextFiltered(roomId, memberId, cursor, action -> true);
+    }
+
+    private FaceEvent nextFiltered(Long roomId, String memberId, DeviceFeedbackState cursor,
+                                   java.util.function.Predicate<Map<String, Object>> goalEligible) {
         var frames = events.findByRoom_IdAndSeqGreaterThanEqualOrderBySeqAsc(
                 roomId, cursor.getNextRoomSeq(), PageRequest.of(0, 50));
         for (RoomEvent frame : frames) {
@@ -27,6 +39,7 @@ public class DeviceFeedbackService {
             for (int i = start; i < actions.size(); i++) {
                 String type = recipientType(actions.get(i), memberId);
                 cursor.consumed(frame.getSeq(), i, actions.size());
+                if ("GOAL".equals(type) && !goalEligible.test(actions.get(i))) continue;
                 if (type != null) return cursor.remember(type);
             }
         }
