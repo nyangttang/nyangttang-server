@@ -12,10 +12,11 @@ import java.util.*;
 
 @Component
 public class RoomNotificationRecorder {
+    private final org.springframework.context.ApplicationEventPublisher publisher;
     private final RoomNotificationRepository notifications;
     private final RoomMemberRepository members;
-    public RoomNotificationRecorder(RoomNotificationRepository notifications, RoomMemberRepository members) {
-        this.notifications = notifications; this.members = members;
+    public RoomNotificationRecorder(RoomNotificationRepository notifications, RoomMemberRepository members, org.springframework.context.ApplicationEventPublisher publisher) {
+        this.notifications = notifications; this.members = members; this.publisher = publisher;
     }
 
     // Synchronous listener: the event and its notification commit or roll back together.
@@ -44,8 +45,9 @@ public class RoomNotificationRecorder {
             var recipient = members.findById(recipientId).orElseThrow(() ->
                     new IllegalStateException("알림 수신 참가자 데이터 누락"));
             Instant effectiveAt = Instant.parse(Objects.requireNonNull(action.get("effectiveAt")).toString());
-            notifications.save(new RoomNotification(event.getRoom(), recipient, event.getSeq(), index,
+            var saved = notifications.save(new RoomNotification(event.getRoom(), recipient, event.getSeq(), index,
                     type, actorId, cellIndex, effectiveAt, event.getOccurredAt()));
+            publisher.publishEvent(saved);
         }
     }
     private static Long positiveId(Object raw) {
