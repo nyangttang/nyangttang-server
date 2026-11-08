@@ -32,4 +32,6 @@ public interface StudySessionRepository extends JpaRepository<StudySession, Long
             @org.springframework.data.repository.query.Param("date") java.time.LocalDate date,
             @org.springframework.data.repository.query.Param("beforeId") Long beforeId,
             org.springframework.data.domain.Pageable page);
+
+    Optional<StudySession> findByIdAndMember_User_Id(Long id, Long userId);
 }
