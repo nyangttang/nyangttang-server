@@ -9,6 +9,7 @@ import com.nyangttang.server.room.entity.*;
 import com.nyangttang.server.room.repository.*;
 import com.nyangttang.server.study.entity.StudyState;
 import com.nyangttang.server.study.service.StudyStateMachine;
+import com.nyangttang.server.study.service.StudyAccountingService;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -32,15 +33,15 @@ public class MockSensorService {
     private final RoomRuntimeRepository maps;
     private final MemberRuntimeRepository runtimes;
     private final DeviceRepository devices;
-    private final StudyStateMachine machine;
+    private final StudyAccountingService accounting;
     private final Clock clock;
 
     public MockSensorService(RoomRepository rooms, RoomMemberRepository members,
                              RoomRuntimeRepository maps, MemberRuntimeRepository runtimes,
-                             DeviceRepository devices, StudyStateMachine machine, Clock clock) {
+                             DeviceRepository devices, StudyAccountingService accounting, Clock clock) {
         this.rooms = rooms; this.members = members; this.maps = maps;
         this.runtimes = runtimes; this.devices = devices;
-        this.machine = machine; this.clock = clock;
+        this.accounting = accounting; this.clock = clock;
     }
 
     public MockTelemetryResponse connect(Long roomId, Long userId) {
@@ -50,10 +51,10 @@ public class MockSensorService {
                 .orElseGet(() -> new Device("SIM-" + randomHex(12),
                         randomHex(32), DeviceSource.SIMULATED));
         requireSimulation(device);
+        accounting.advance(context.room(), context.map(), context.runtime(), device, now);
+        accounting.disconnect(context.room(), context.map(), context.runtime(), now, false);
         device.connectSimulation(context.member(), randomHex(4), now);
         devices.save(device);
-        apply(context.runtime(), context.map(),
-                new StudyStateMachine.Decision(StudyState.OFFLINE, null), now);
         return response(context, device, true, "CONNECTED");
     }
 
@@ -72,9 +73,8 @@ public class MockSensorService {
                 request.phonePresent(), request.personPresent(), now);
         if (!accepted) return response(context, device, false, "DUPLICATE_OR_OLD");
 
-        apply(context.runtime(), context.map(), machine.receive(
-                context.runtime().getState(), context.runtime().getAbsentSince(),
-                request.phonePresent(), request.personPresent(), now), now);
+        accounting.afterInput(context.room(), context.map(), context.runtime(),
+                request.phonePresent(), request.personPresent(), now);
         return response(context, device, true, "ACCEPTED");
     }
 
@@ -90,13 +90,12 @@ public class MockSensorService {
 
     // Single-instance local dev startup: old simulated connections must reconnect.
     public void resetRoomAfterRestart(Long roomId) {
-        lockRoom(roomId);
+        Room room = lockRoom(roomId);
         RoomRuntime map = map(roomId);
         Instant now = now();
         for (Device device : devices.findAllByMember_Room_IdAndSource(roomId, DeviceSource.SIMULATED)) {
+            accounting.disconnect(room, map, runtime(device.getMember().getId()), now, true);
             device.invalidateSimulationConnection();
-            apply(runtime(device.getMember().getId()), map,
-                    new StudyStateMachine.Decision(StudyState.OFFLINE, null), now);
         }
     }
 
@@ -128,13 +127,7 @@ public class MockSensorService {
         }
     }
     private void advance(MemberRuntime runtime, RoomRuntime map, Device device, Room room, Instant now) {
-        apply(runtime, map, machine.tick(runtime.getState(), runtime.getAbsentSince(),
-                device.getLastSeenAt(), now, room.getAwayGraceMs()), now);
-    }
-    private void apply(MemberRuntime runtime, RoomRuntime map, StudyStateMachine.Decision decision, Instant now) {
-        if (runtime.changeStudyState(decision.state(), decision.absentSince())) {
-            map.markStateChanged(now);
-        }
+        accounting.advance(room, map, runtime, device, now);
     }
     private MockTelemetryResponse response(Context c, Device d, boolean accepted, String reason) {
         return new MockTelemetryResponse(accepted, reason, d.getDeviceCode(), d.getLinkId(),

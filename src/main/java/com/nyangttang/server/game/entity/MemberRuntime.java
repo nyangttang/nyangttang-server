@@ -83,4 +83,13 @@ public class MemberRuntime {
         return changed;
     }
 
+
+    public void accountThrough(Instant at) {
+        Objects.requireNonNull(at);
+        if (at.isBefore(lastAccountedAt)) {
+            throw new IllegalArgumentException("시간 반영 시각은 되돌릴 수 없습니다.");
+        }
+        lastAccountedAt = at;
+    }
+
 }

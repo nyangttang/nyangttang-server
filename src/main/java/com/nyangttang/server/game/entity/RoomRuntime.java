@@ -68,4 +68,9 @@ public class RoomRuntime {
         updatedAt = Objects.requireNonNull(now);
     }
 
+
+    public long nextEventSequence() {
+        return ++lastEventSeq;
+    }
+
 }

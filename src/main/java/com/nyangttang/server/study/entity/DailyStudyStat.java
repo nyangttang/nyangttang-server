@@ -54,4 +54,18 @@ public class DailyStudyStat {
     public Long getCreditedMs() { return creditedMs; }
     public Integer getGoalSeconds() { return goalSeconds; }
     public Instant getGoalAchievedAt() { return goalAchievedAt; }
+
+    // Returns the exact first goal crossing time, or null if not newly reached.
+    public Instant addCredit(long millis, Instant intervalStart) {
+        if (millis < 0) throw new IllegalArgumentException("인정 시간은 음수일 수 없습니다.");
+        long before = creditedMs;
+        creditedMs = Math.addExact(creditedMs, millis);
+        long target = goalSeconds.longValue() * 1000;
+        if (goalAchievedAt == null && before < target && creditedMs >= target) {
+            goalAchievedAt = intervalStart.plusMillis(target - before);
+            return goalAchievedAt;
+        }
+        return null;
+    }
+
 }
