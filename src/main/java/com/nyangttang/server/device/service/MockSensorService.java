@@ -82,26 +82,27 @@ public class MockSensorService {
         Room room = lockRoom(roomId);
         RoomRuntime map = map(roomId);
         Instant now = now();
-        for (Device device : devices.findAllByMember_Room_IdAndSource(roomId, DeviceSource.SIMULATED)) {
+        for (Device device : devices.findAllByMember_Room_IdOrderByMember_SlotNoAsc(roomId)) {
             MemberRuntime runtime = runtime(device.getMember().getId());
             advance(runtime, map, device, room, now);
         }
     }
 
-    // Single-instance local dev startup: old simulated connections must reconnect.
+    // One scheduler handles both sources; restart never credits server downtime.
     public void resetRoomAfterRestart(Long roomId) {
         Room room = lockRoom(roomId);
         RoomRuntime map = map(roomId);
         Instant now = now();
-        for (Device device : devices.findAllByMember_Room_IdAndSource(roomId, DeviceSource.SIMULATED)) {
+        for (Device device : devices.findAllByMember_Room_IdOrderByMember_SlotNoAsc(roomId)) {
             accounting.disconnect(room, map, runtime(device.getMember().getId()), now, true);
-            device.invalidateSimulationConnection();
+            if (device.getSource() == DeviceSource.SIMULATED) device.invalidateSimulationConnection();
+            else device.invalidatePhysicalConnection();
         }
     }
 
     @Transactional(readOnly = true)
-    public List<Long> simulationRoomIds() {
-        return devices.findRoomIdsBySource(DeviceSource.SIMULATED);
+    public List<Long> connectedRoomIds() {
+        return devices.findConnectedRoomIds();
     }
 
     private Context ownedContext(Long roomId, Long userId) {

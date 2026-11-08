@@ -14,4 +14,14 @@ public interface DeviceRepository extends JpaRepository<Device, Long> {
 
     @Query("select distinct d.member.room.id from Device d where d.source = :source and d.member is not null")
     List<Long> findRoomIdsBySource(@Param("source") DeviceSource source);
+
+    Optional<Device> findByDeviceCode(String deviceCode);
+    List<Device> findAllByMember_Room_IdOrderByMember_SlotNoAsc(Long roomId);
+
+    @Query("select distinct d.member.room.id from Device d where d.member is not null")
+    List<Long> findConnectedRoomIds();
+
+    // Scalar lookup avoids loading stale Device state before acquiring the room lock.
+    @Query("select d.member.room.id from Device d where d.deviceCode = :code and d.source = :source")
+    Optional<Long> findRoomIdByCode(@Param("code") String code, @Param("source") DeviceSource source);
 }

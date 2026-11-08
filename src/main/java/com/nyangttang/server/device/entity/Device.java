@@ -134,4 +134,43 @@ public class Device {
         lastSeenAt = null;
     }
 
+
+    // The legacy firmware sends no credential or sequence; local dev only.
+    public void bindPhysical(RoomMember owner, String code, Instant now) {
+        Objects.requireNonNull(owner);
+        if (member != null && !member.getId().equals(owner.getId())) {
+            throw new IllegalStateException("기기 소유자가 다릅니다.");
+        }
+        if (source == DeviceSource.PHYSICAL && member != null && !deviceCode.equals(code)) {
+            throw new IllegalStateException("이미 등록한 실제 기기 코드는 변경할 수 없습니다.");
+        }
+        member = owner;
+        deviceCode = Objects.requireNonNull(code);
+        source = DeviceSource.PHYSICAL;
+        claimedAt = Objects.requireNonNull(now);
+        firmwareVersion = null;
+        clearInput();
+    }
+
+    public void acceptPhysical(boolean phone, boolean seat, Instant now) {
+        if (source != DeviceSource.PHYSICAL || member == null) {
+            throw new IllegalStateException("등록된 실제 기기가 아닙니다.");
+        }
+        phonePresent = phone;
+        personPresent = seat;
+        lastSeenAt = Objects.requireNonNull(now);
+    }
+
+    public void invalidatePhysicalConnection() {
+        if (source != DeviceSource.PHYSICAL) throw new IllegalStateException("실제 기기가 아닙니다.");
+        clearInput();
+    }
+
+    private void clearInput() {
+        linkId = null;
+        lastSeq = -1L;
+        phonePresent = null;
+        personPresent = null;
+        lastSeenAt = null;
+    }
 }

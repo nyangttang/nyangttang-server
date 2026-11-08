@@ -19,18 +19,18 @@ public class MockSensorScheduler {
 
     @EventListener(ApplicationReadyEvent.class)
     public void resetAfterRestart() {
-        for (Long roomId : service.simulationRoomIds()) service.resetRoomAfterRestart(roomId);
+        for (Long roomId : service.connectedRoomIds()) service.resetRoomAfterRestart(roomId);
         ready = true;
     }
 
     @Scheduled(fixedDelay = 1000, initialDelay = 1000)
     public void tick() {
         if (!ready) return;
-        for (Long roomId : service.simulationRoomIds()) {
+        for (Long roomId : service.connectedRoomIds()) {
             try {
                 service.tickRoom(roomId);
             } catch (RuntimeException e) {
-                log.error("모의 기기 상태 갱신 실패: roomId={}", roomId, e);
+                log.error("기기 상태 갱신 실패: roomId={}", roomId, e);
             }
         }
     }
