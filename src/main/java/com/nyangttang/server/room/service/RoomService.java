@@ -18,6 +18,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.nyangttang.server.room.dto.JoinRoomRequest;
+import com.nyangttang.server.room.dto.JoinRoomResponse;
+import org.springframework.transaction.annotation.Isolation;
+
+import java.util.List;
+
 import java.security.SecureRandom;
 import java.time.Instant;
 
@@ -147,6 +153,120 @@ public class RoomService {
         throw new ResponseStatusException(
                 HttpStatus.SERVICE_UNAVAILABLE,
                 "초대 코드를 생성하지 못했습니다. 다시 요청해주세요."
+        );
+    }
+
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    public JoinRoomResponse joinRoom(
+            Long userId,
+            JoinRoomRequest request
+    ) {
+        // 1. 같은 사용자의 중복 요청을 순서대로 처리합니다.
+        User user = userRepository.findByIdForUpdate(userId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.UNAUTHORIZED,
+                        "사용자를 찾을 수 없습니다."
+                ));
+
+        if (roomMemberRepository.existsByUser_Id(userId)) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "이미 참여 중인 방이 있습니다."
+            );
+        }
+
+        // 2. 같은 방의 입장 요청도 순서대로 처리합니다.
+        Room room = roomRepository
+                .findByInviteCodeForUpdate(request.inviteCode())
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "초대 코드에 해당하는 방이 없습니다."
+                ));
+
+        // 방 잠금을 얻은 뒤 참가자 목록을 읽습니다.
+        List<RoomMember> members =
+                roomMemberRepository.findAllByRoom_IdOrderBySlotNoAsc(
+                        room.getId()
+                );
+
+        // 3. 정원을 확인합니다.
+        if (members.size() >= 4) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "방 정원이 가득 찼습니다."
+            );
+        }
+
+        // 4. 고양이 색 중복을 확인합니다.
+        boolean colorTaken = members.stream()
+                .anyMatch(member ->
+                        member.getCatColor() == request.catColor()
+                );
+
+        if (colorTaken) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "이미 사용 중인 고양이 색입니다."
+            );
+        }
+
+        // 5. 비어 있는 가장 작은 자리 번호를 찾습니다.
+        boolean[] occupied = new boolean[4];
+
+        for (RoomMember member : members) {
+            occupied[member.getSlotNo()] = true;
+        }
+
+        int slotNo = 0;
+
+        while (slotNo < occupied.length && occupied[slotNo]) {
+            slotNo++;
+        }
+
+        if (slotNo == occupied.length) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "입장 가능한 자리가 없습니다."
+            );
+        }
+
+        // 6. 참가자를 저장합니다.
+        RoomMember member = new RoomMember(
+                room,
+                user,
+                (byte) slotNo,
+                request.catName(),
+                request.catColor(),
+                request.dailyGoalSeconds()
+        );
+
+        roomMemberRepository.save(member);
+
+        // 7. 자리 번호에 따라 지도 네 모서리에 배치합니다.
+        byte x = (byte) (slotNo % 2 == 0 ? 0 : 9);
+        byte y = (byte) (slotNo < 2 ? 0 : 9);
+
+        MemberRuntime runtime = new MemberRuntime(
+                member,
+                x,
+                y,
+                Instant.now()
+        );
+
+        memberRuntimeRepository.save(runtime);
+
+        return new JoinRoomResponse(
+                room.getId(),
+                room.getName(),
+                room.getMode(),
+                member.getId(),
+                slotNo,
+                member.getCatName(),
+                member.getCatColor(),
+                member.getDailyGoalSeconds(),
+                runtime.getState(),
+                x,
+                y
         );
     }
 }
