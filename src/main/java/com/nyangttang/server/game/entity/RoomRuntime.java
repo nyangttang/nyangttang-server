@@ -62,4 +62,10 @@ public class RoomRuntime {
     public List<String> getOwners() { return owners; }
     public Map<String, Map<String, Integer>> getVisits() { return visits; }
     public Instant getUpdatedAt() { return updatedAt; }
+
+    public void markStateChanged(Instant now) {
+        snapshotVersion++;
+        updatedAt = Objects.requireNonNull(now);
+    }
+
 }

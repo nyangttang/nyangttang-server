@@ -74,4 +74,13 @@ public class MemberRuntime {
     public Integer getStepRemainderMs() { return stepRemainderMs; }
     public Instant getAbsentSince() { return absentSince; }
     public Instant getLastAccountedAt() { return lastAccountedAt; }
+
+    public boolean changeStudyState(StudyState nextState, Instant nextAbsentSince) {
+        Objects.requireNonNull(nextState);
+        boolean changed = state != nextState || !Objects.equals(absentSince, nextAbsentSince);
+        state = nextState;
+        absentSince = nextAbsentSince;
+        return changed;
+    }
+
 }

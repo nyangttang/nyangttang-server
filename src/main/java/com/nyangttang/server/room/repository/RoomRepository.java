@@ -18,4 +18,9 @@ public interface RoomRepository extends JpaRepository<Room, Long> {
     Optional<Room> findByInviteCodeForUpdate(
             @Param("inviteCode") String inviteCode
     );
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select r from Room r where r.id = :roomId")
+    Optional<Room> findByIdForUpdate(@Param("roomId") Long roomId);
+
 }

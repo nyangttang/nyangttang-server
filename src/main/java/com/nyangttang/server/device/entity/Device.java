@@ -88,4 +88,50 @@ public class Device {
     public Instant getLastSeenAt() { return lastSeenAt; }
     public Instant getClaimedAt() { return claimedAt; }
     public Instant getCreatedAt() { return createdAt; }
+
+    public void connectSimulation(RoomMember owner, String newLinkId, Instant now) {
+        if (source != DeviceSource.SIMULATED) {
+            throw new IllegalStateException("실제 기기를 모의 기기로 변경할 수 없습니다.");
+        }
+        if (member != null && !member.getId().equals(owner.getId())) {
+            throw new IllegalStateException("기기 소유자가 다릅니다.");
+        }
+        member = Objects.requireNonNull(owner);
+        if (claimedAt == null) claimedAt = now;
+        linkId = Objects.requireNonNull(newLinkId);
+        lastSeq = -1L;
+        phonePresent = null;
+        personPresent = null;
+        lastSeenAt = null;
+        firmwareVersion = "sim-v1";
+    }
+
+    public boolean acceptSimulation(String inputLinkId, long seq,
+                                    boolean phone, boolean person, Instant now) {
+        if (source != DeviceSource.SIMULATED || linkId == null
+                || !linkId.equals(inputLinkId)) {
+            throw new IllegalStateException("현재 모의 연결이 아닙니다.");
+        }
+        if (seq < 0 || seq > 4_294_967_295L) {
+            throw new IllegalArgumentException("입력 순번 범위가 잘못되었습니다.");
+        }
+        if (seq <= lastSeq) return false;
+        lastSeq = seq;
+        phonePresent = phone;
+        personPresent = person;
+        lastSeenAt = Objects.requireNonNull(now);
+        return true;
+    }
+
+    public void invalidateSimulationConnection() {
+        if (source != DeviceSource.SIMULATED) {
+            throw new IllegalStateException("모의 기기만 초기화할 수 있습니다.");
+        }
+        linkId = null;
+        lastSeq = -1L;
+        phonePresent = null;
+        personPresent = null;
+        lastSeenAt = null;
+    }
+
 }
