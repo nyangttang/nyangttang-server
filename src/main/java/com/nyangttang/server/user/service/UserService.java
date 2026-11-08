@@ -11,17 +11,29 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final AuthService authService;
 
-    public UserService(UserRepository userRepository) {
+    public UserService(
+            UserRepository userRepository,
+            AuthService authService
+    ) {
         this.userRepository = userRepository;
+        this.authService = authService;
     }
 
     @Transactional
     public CreateUserResponse createUser(CreateUserRequest request) {
         User user = new User(request.nickname());
-
         User savedUser = userRepository.save(user);
 
-        return CreateUserResponse.from(savedUser);
+        AuthService.IssuedSession session =
+                authService.issueSession(savedUser);
+
+        return new CreateUserResponse(
+                savedUser.getId(),
+                savedUser.getNickname(),
+                session.accessToken(),
+                session.expiresAt()
+        );
     }
 }

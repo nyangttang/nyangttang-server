@@ -1,15 +1,11 @@
 package com.nyangttang.server.user.dto;
 
-import com.nyangttang.server.user.entity.User;
+import java.time.Instant;
 
 public record CreateUserResponse(
         Long id,
-        String nickname
+        String nickname,
+        String accessToken,
+        Instant expiresAt
 ) {
-    public static CreateUserResponse from(User user) {
-        return new CreateUserResponse(
-                user.getId(),
-                user.getNickname()
-        );
-    }
 }
