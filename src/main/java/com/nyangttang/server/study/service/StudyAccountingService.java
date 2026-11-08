@@ -2,6 +2,8 @@ package com.nyangttang.server.study.service;
 
 import com.nyangttang.server.device.entity.Device;
 import com.nyangttang.server.game.entity.*;
+import com.nyangttang.server.game.service.CatMovementService;
+import com.nyangttang.server.game.service.MovementTimeline;
 import com.nyangttang.server.room.entity.*;
 import com.nyangttang.server.room.service.RoomSnapshotAssembler;
 import com.nyangttang.server.study.entity.*;
@@ -17,6 +19,8 @@ import java.util.*;
 @Service
 @Transactional(propagation = Propagation.MANDATORY)
 public class StudyAccountingService {
+    private final MovementTimeline movementTimeline;
+    private final CatMovementService movement;
     private final StudyTimeline timeline;
     private final StudyStateMachine machine;
     private final StudySessionRepository sessions;
@@ -26,9 +30,11 @@ public class StudyAccountingService {
 
     public StudyAccountingService(StudyTimeline timeline, StudyStateMachine machine,
                                   StudySessionRepository sessions, DailyStudyStatRepository daily,
-                                  RoomEventRepository events, RoomSnapshotAssembler snapshots) {
+                                  RoomEventRepository events, RoomSnapshotAssembler snapshots,
+                                  MovementTimeline movementTimeline, CatMovementService movement) {
         this.timeline = timeline; this.machine = machine; this.sessions = sessions;
         this.daily = daily; this.events = events; this.snapshots = snapshots;
+        this.movementTimeline = movementTimeline; this.movement = movement;
     }
 
     public void advance(Room room, RoomRuntime map, MemberRuntime runtime, Device device, Instant requestedNow) {
@@ -36,6 +42,7 @@ public class StudyAccountingService {
         StudySession open = open(runtime);
         List<StudyTimeline.Slice> slices = timeline.split(runtime.getState(), runtime.getLastAccountedAt(),
                 now, runtime.getAbsentSince(), device.getLastSeenAt(), room.getAwayGraceMs());
+        slices = movementTimeline.split(slices, runtime.getStepRemainderMs(), room.getStepMs());
 
         for (var slice : slices) {
             List<Map<String, Object>> actions = new ArrayList<>();
@@ -50,6 +57,7 @@ public class StudyAccountingService {
                     Map<String, Object> goal = action("GOAL", runtime, goalAt);
                     goal.put("studyDate", slice.date().toString()); actions.add(goal);
                 }
+                actions.addAll(movement.applyCredit(room, map, runtime, slice.creditedMs(), slice.to()));
             }
             runtime.accountThrough(slice.to());
             change(runtime, machine.tick(runtime.getState(), runtime.getAbsentSince(),

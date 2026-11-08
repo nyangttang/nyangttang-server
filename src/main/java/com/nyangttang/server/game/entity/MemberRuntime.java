@@ -92,4 +92,32 @@ public class MemberRuntime {
         lastAccountedAt = at;
     }
 
+
+    public int earnMovementSteps(long creditedMillis, int stepMillis) {
+        if (creditedMillis < 0 || stepMillis <= 0 || stepMillis > 60_000
+                || stepRemainderMs < 0 || stepRemainderMs >= stepMillis) {
+            throw new IllegalArgumentException("이동 시간 설정이 잘못되었습니다.");
+        }
+        long total = Math.addExact(stepRemainderMs.longValue(), creditedMillis);
+        int steps = Math.toIntExact(total / stepMillis);
+        stepRemainderMs = (int) (total % stepMillis);
+        return steps;
+    }
+
+    public void allowBacktrackAfterEncounter() {
+        previousX = null;
+        previousY = null;
+    }
+
+    public void moveTo(int nextX, int nextY) {
+        if (nextX < 0 || nextX > 9 || nextY < 0 || nextY > 9
+                || Math.abs(nextX - x) + Math.abs(nextY - y) != 1) {
+            throw new IllegalArgumentException("상하좌우 인접 칸으로만 이동할 수 있습니다.");
+        }
+        previousX = x;
+        previousY = y;
+        x = (byte) nextX;
+        y = (byte) nextY;
+    }
+
 }

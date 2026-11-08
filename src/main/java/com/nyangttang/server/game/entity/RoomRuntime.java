@@ -73,4 +73,42 @@ public class RoomRuntime {
         return ++lastEventSeq;
     }
 
+
+    public record TerritoryChange(String type, int cellIndex, String previousOwnerId, String ownerId) {}
+
+    public TerritoryChange visitCell(int x, int y, String visitorId) {
+        Objects.requireNonNull(visitorId);
+        if (visitorId.isBlank() || x < 0 || x > 9 || y < 0 || y > 9 || owners.size() != 100) {
+            throw new IllegalArgumentException("점령 판정 입력이 잘못되었습니다.");
+        }
+        int index = y * 10 + x;
+        String before = owners.get(index);
+        if (visitorId.equals(before)) return new TerritoryChange("NONE", index, before, before);
+
+        // Replace JSON collections instead of relying on nested in-place mutations.
+        List<String> nextOwners = new ArrayList<>(owners);
+        Map<String, Map<String, Integer>> nextVisits = new HashMap<>();
+        visits.forEach((cell, attackers) -> nextVisits.put(cell, new HashMap<>(attackers)));
+        String key = Integer.toString(index);
+        String type;
+        if (before == null) {
+            nextOwners.set(index, visitorId);
+            nextVisits.remove(key);
+            type = "CLAIM";
+        } else {
+            Map<String, Integer> attackers = nextVisits.computeIfAbsent(key, ignored -> new HashMap<>());
+            if (attackers.getOrDefault(visitorId, 0) >= 1) {
+                nextOwners.set(index, visitorId);
+                nextVisits.remove(key); // Clear every attacker's marks after ownership changes.
+                type = "INVADE";
+            } else {
+                attackers.put(visitorId, 1);
+                type = "TERRITORY_MARKED";
+            }
+        }
+        owners = nextOwners;
+        visits = nextVisits;
+        return new TerritoryChange(type, index, before, owners.get(index));
+    }
+
 }
