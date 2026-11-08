@@ -11,6 +11,7 @@ import com.nyangttang.server.study.repository.*;
 import com.nyangttang.server.replay.entity.RoomEvent;
 import com.nyangttang.server.replay.repository.RoomEventRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.annotation.*;
 import java.time.*;
 import java.util.*;
@@ -19,6 +20,7 @@ import java.util.*;
 @Service
 @Transactional(propagation = Propagation.MANDATORY)
 public class StudyAccountingService {
+    private final ApplicationEventPublisher publisher;
     private final MovementTimeline movementTimeline;
     private final CatMovementService movement;
     private final StudyTimeline timeline;
@@ -31,7 +33,9 @@ public class StudyAccountingService {
     public StudyAccountingService(StudyTimeline timeline, StudyStateMachine machine,
                                   StudySessionRepository sessions, DailyStudyStatRepository daily,
                                   RoomEventRepository events, RoomSnapshotAssembler snapshots,
-                                  MovementTimeline movementTimeline, CatMovementService movement) {
+                                  MovementTimeline movementTimeline, CatMovementService movement,
+                                  ApplicationEventPublisher publisher) {
+        this.publisher = publisher;
         this.timeline = timeline; this.machine = machine; this.sessions = sessions;
         this.daily = daily; this.events = events; this.snapshots = snapshots;
         this.movementTimeline = movementTimeline; this.movement = movement;
@@ -167,7 +171,8 @@ public class StudyAccountingService {
         map.markStateChanged(recordedAt);
         long seq = map.nextEventSequence();
         Map<String, Object> snapshot = snapshots.publicSnapshot(room, map, date);
-        events.save(new RoomEvent(room, seq, recordedAt, map.getSnapshotVersion(), snapshot, actions));
+        RoomEvent event = events.save(new RoomEvent(room, seq, recordedAt, map.getSnapshotVersion(), snapshot, actions));
+        publisher.publishEvent(event);
         return new Frame(seq, snapshot);
     }
     private Map<String, Object> action(String type, MemberRuntime runtime, Instant at) {
