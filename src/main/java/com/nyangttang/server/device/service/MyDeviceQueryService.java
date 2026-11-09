@@ -51,6 +51,7 @@ public class MyDeviceQueryService {
         // Derive display state without extending heartbeat or changing study/game records.
         var state = machine.tick(runtime.getState(), runtime.getAbsentSince(), seen, now, room.getAwayGraceMs()).state();
         return new MyDeviceResponse(device.getDeviceCode(), member.getId().toString(), device.getSource(),
-                seen, connected, state);
+                seen, connected, state, connected ? device.getPhonePresent() : null,
+                connected ? device.getPersonPresent() : null);
     }
 }

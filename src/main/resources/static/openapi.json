@@ -4755,7 +4755,8 @@
               "CHEESE",
               "GRAY",
               "BLACK",
-              "WHITE"
+              "WHITE",
+              "TRICOLOR"
             ]
           },
           "dailyGoalSeconds": {
@@ -4764,6 +4765,13 @@
             "minimum": 30,
             "maximum": 43200,
             "description": "초 단위. 60분이면 3600."
+          },
+          "capacity": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 4,
+            "default": 4,
+            "description": "방 정원. 생성 요청에서 생략하면 4명."
           }
         }
       },
@@ -4793,7 +4801,8 @@
               "CHEESE",
               "GRAY",
               "BLACK",
-              "WHITE"
+              "WHITE",
+              "TRICOLOR"
             ]
           },
           "dailyGoalSeconds": {
@@ -4850,7 +4859,8 @@
               "CHEESE",
               "GRAY",
               "BLACK",
-              "WHITE"
+              "WHITE",
+              "TRICOLOR"
             ]
           },
           "dailyGoalSeconds": {
@@ -4889,6 +4899,13 @@
           "awayGraceMs": {
             "type": "integer",
             "format": "int32"
+          },
+          "capacity": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 4,
+            "default": 4,
+            "description": "방 정원. 생성 요청에서 생략하면 4명."
           }
         }
       },
@@ -4935,7 +4952,8 @@
               "CHEESE",
               "GRAY",
               "BLACK",
-              "WHITE"
+              "WHITE",
+              "TRICOLOR"
             ]
           },
           "dailyGoalSeconds": {
@@ -4969,6 +4987,13 @@
             "format": "int32",
             "minimum": 0,
             "maximum": 3
+          },
+          "capacity": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 4,
+            "default": 4,
+            "description": "방 정원. 생성 요청에서 생략하면 4명."
           }
         }
       },
@@ -5010,7 +5035,8 @@
               "CHEESE",
               "GRAY",
               "BLACK",
-              "WHITE"
+              "WHITE",
+              "TRICOLOR"
             ]
           },
           "state": {
@@ -5479,12 +5505,20 @@
               "CHEESE",
               "GRAY",
               "BLACK",
-              "WHITE"
+              "WHITE",
+              "TRICOLOR"
             ]
           },
           "dailyGoalSeconds": {
             "type": "integer",
             "format": "int32"
+          },
+          "capacity": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 4,
+            "default": 4,
+            "description": "방 정원. 생성 요청에서 생략하면 4명."
           }
         }
       },
@@ -5530,6 +5564,16 @@
               "RESTING",
               "OFFLINE"
             ]
+          },
+          "phonePresent": {
+            "type": "boolean",
+            "nullable": true,
+            "description": "마지막 센서 값. 미수신 또는 연결 끊김이면 null."
+          },
+          "personPresent": {
+            "type": "boolean",
+            "nullable": true,
+            "description": "마지막 센서 값. 미수신 또는 연결 끊김이면 null."
           }
         }
       },
@@ -6197,7 +6241,8 @@
               "CHEESE",
               "GRAY",
               "BLACK",
-              "WHITE"
+              "WHITE",
+              "TRICOLOR"
             ]
           },
           "state": {

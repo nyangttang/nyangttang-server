@@ -15,6 +15,7 @@ public record JoinRoomResponse(
         Integer dailyGoalSeconds,
         StudyState state,
         int x,
-        int y
+        int y,
+        int capacity
 ) {
 }

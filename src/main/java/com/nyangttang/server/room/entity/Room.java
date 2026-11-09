@@ -24,6 +24,9 @@ public class Room {
     @Column(name = "name", nullable = false, length = 30)
     private String name;
 
+    @Column(name = "capacity", nullable = false)
+    private Integer capacity = 4;
+
     @JdbcTypeCode(SqlTypes.CHAR)
     @Column(name = "invite_code", nullable = false, length = 6, columnDefinition = "CHAR(6)")
     private String inviteCode;
@@ -64,6 +67,12 @@ public class Room {
     private Instant closedAt;
     public Instant getClosedAt(){return closedAt;}
     public void close(Instant at){if(closedAt==null)closedAt=Objects.requireNonNull(at);}
+
+    public void setCapacity(int capacity) {
+        if (capacity < 1 || capacity > 4) throw new IllegalArgumentException("방 정원은 1~4명입니다.");
+        this.capacity = capacity;
+    }
+    public Integer getCapacity() { return capacity; }
 
     public Long getId() { return id; }
     public String getName() { return name; }
