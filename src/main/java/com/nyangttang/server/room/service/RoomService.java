@@ -80,6 +80,8 @@ public class RoomService {
                 request.mode()
         );
 
+        room.setCapacity(request.capacity());
+
         // 다른 요청이 같은 초대 코드를 먼저 저장하는 경우도 DB가 차단합니다.
         try {
             roomRepository.saveAndFlush(room);
@@ -129,7 +131,8 @@ public class RoomService {
                 host.getDailyGoalSeconds(),
                 memberRuntime.getState(),
                 memberRuntime.getX(),
-                memberRuntime.getY()
+                memberRuntime.getY(),
+                room.getCapacity()
         );
     }
 
@@ -191,7 +194,7 @@ public class RoomService {
                 );
 
         // 3. 정원을 확인합니다.
-        if (members.size() >= 4) {
+        if (members.size() >= room.getCapacity()) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
                     "방 정원이 가득 찼습니다."
@@ -267,7 +270,8 @@ public class RoomService {
                 member.getDailyGoalSeconds(),
                 runtime.getState(),
                 x,
-                y
+                y,
+                room.getCapacity()
         );
     }
 }

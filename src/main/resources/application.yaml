@@ -1,33 +1,43 @@
 spring:
-  application:
-    name: nyangttang-server
-
   datasource:
-    url: ${DB_URL:jdbc:mysql://localhost:3306/nyangttang}
-    username: ${DB_USERNAME:nyangttang_app}
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
-
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 1
   jpa:
     hibernate:
       ddl-auto: validate
     open-in-view: false
+    show-sql: false
     properties:
       hibernate:
         jdbc:
           time_zone: UTC
-
   sql:
     init:
       mode: never
 
 server:
-  port: 8080
+  address: 0.0.0.0
+  port: ${PORT:8080}
+  forward-headers-strategy: framework
+  shutdown: graceful
+  error:
+    include-message: never
+    include-stacktrace: never
+    include-binding-errors: never
 
 springdoc:
   swagger-ui:
-    url: /openapi.json
+    enabled: ${SWAGGER_ENABLED:true}
+    url: /openapi-prod.json
     disable-swagger-default-url: true
     persist-authorization: false
-    display-request-duration: true
-    filter: true
-    doc-expansion: none
+
+logging:
+  level:
+    root: INFO
+    org.hibernate.SQL: WARN
+    org.hibernate.orm.jdbc.bind: WARN

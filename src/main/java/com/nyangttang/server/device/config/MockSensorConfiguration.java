@@ -7,7 +7,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import java.time.Clock;
 
 @Configuration
-@Profile("dev")
+@Profile({"dev", "prod"})
 @EnableScheduling
 public class MockSensorConfiguration {
     @Bean

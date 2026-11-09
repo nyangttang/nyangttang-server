@@ -24,7 +24,7 @@ import java.util.HexFormat;
 import java.util.List;
 
 @Service
-@Profile("dev")
+@Profile({"dev", "prod"})
 @Transactional(isolation = Isolation.READ_COMMITTED)
 public class MockSensorService {
     private static final SecureRandom RANDOM = new SecureRandom();

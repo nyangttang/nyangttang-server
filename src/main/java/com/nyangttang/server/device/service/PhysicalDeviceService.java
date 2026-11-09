@@ -20,7 +20,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.HexFormat;
 
 @Service
-@Profile("dev")
+@Profile({"dev", "prod"})
 @Transactional(isolation = Isolation.READ_COMMITTED)
 public class PhysicalDeviceService {
     private final RoomRepository rooms;

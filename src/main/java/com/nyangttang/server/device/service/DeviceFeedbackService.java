@@ -11,7 +11,7 @@ import org.springframework.transaction.annotation.*;
 import java.util.Map;
 
 @Service
-@Profile("dev")
+@Profile({"dev", "prod"})
 @Transactional(propagation = Propagation.MANDATORY)
 public class DeviceFeedbackService {
     private final RoomEventRepository events;

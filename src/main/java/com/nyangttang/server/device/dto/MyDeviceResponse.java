@@ -5,4 +5,5 @@ import com.nyangttang.server.study.entity.StudyState;
 import java.time.Instant;
 
 public record MyDeviceResponse(String deviceCode, String memberId, DeviceSource source,
-                               Instant lastSeenAt, boolean connected, StudyState state) {}
+                               Instant lastSeenAt, boolean connected, StudyState state,
+                               Boolean phonePresent, Boolean personPresent) {}

@@ -45,7 +45,8 @@ public class ApiErrors {
         var headers=new HttpHeaders();headers.putAll(original);
         headers.setContentType(MediaType.APPLICATION_JSON);headers.setCacheControl("no-store");
         headers.set("X-Request-Id",body.error().requestId());
-        if(status==401)headers.set(HttpHeaders.WWW_AUTHENTICATE,"Bearer");
+        if(status==401)headers.set(HttpHeaders.WWW_AUTHENTICATE,
+                "DEVICE_AUTH_FAILED".equals(code) ? "DeviceKey realm=\"nyangttang\"" : "Bearer");
         return new ResponseEntity<>(body,headers,HttpStatusCode.valueOf(status));
     }
     public static String code(int status){return switch(status){

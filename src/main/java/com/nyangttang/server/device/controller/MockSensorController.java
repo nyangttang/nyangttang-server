@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 
 @RestController
-@Profile("dev")
+@Profile("dev & !prod")
 @RequestMapping("/api/v1/dev/rooms/{roomId}/mock-device")
 public class MockSensorController {
     private final MockSensorService service;

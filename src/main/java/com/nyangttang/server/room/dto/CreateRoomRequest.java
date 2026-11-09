@@ -26,9 +26,12 @@ public record CreateRoomRequest(
         @NotNull(message = "목표 시간을 입력해주세요.")
         @Min(value = 30, message = "목표 시간은 최소 30초입니다.")
         @Max(value = 43200, message = "목표 시간은 최대 12시간입니다.")
-        Integer dailyGoalSeconds
+        Integer dailyGoalSeconds,
+
+        @Min(1) @Max(4) Integer capacity
 ) {
     public CreateRoomRequest {
+        if (capacity == null) capacity = 4;
         if (name != null) {
             name = name.strip();
         }
