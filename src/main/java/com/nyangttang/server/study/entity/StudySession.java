@@ -82,4 +82,20 @@ public class StudySession {
     public Long getEndEventSeq() { return endEventSeq; }
     public Map<String, Object> getStartSnapshot() { return startSnapshot; }
     public Map<String, Object> getEndSnapshot() { return endSnapshot; }
+
+    public void addCredit(long millis) {
+        if (endedAt != null || millis < 0) throw new IllegalStateException("잘못된 공부 시간 반영");
+        creditedMs = Math.addExact(creditedMs, millis);
+    }
+
+    public void finish(Instant at, StudyEndReason reason, long eventSeq, Map<String, Object> snapshot) {
+        if (endedAt != null || at.isBefore(startedAt) || eventSeq < startEventSeq) {
+            throw new IllegalStateException("공부 구간 종료 정보가 잘못되었습니다.");
+        }
+        endedAt = Objects.requireNonNull(at);
+        endReason = Objects.requireNonNull(reason);
+        endEventSeq = eventSeq;
+        endSnapshot = new HashMap<>(Objects.requireNonNull(snapshot));
+    }
+
 }
