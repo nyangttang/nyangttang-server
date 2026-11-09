@@ -44,3 +44,7 @@ out/
 .env.*
 !.env.example
 .env.push.local
+!.env.prod.example
+*.pem
+*.key
+secrets/

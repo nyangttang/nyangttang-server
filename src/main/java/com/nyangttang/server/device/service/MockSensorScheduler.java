@@ -9,7 +9,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 @Component
-@Profile("dev")
+@Profile({"dev", "prod"})
 public class MockSensorScheduler {
     private static final Logger log = LoggerFactory.getLogger(MockSensorScheduler.class);
     private final MockSensorService service;
