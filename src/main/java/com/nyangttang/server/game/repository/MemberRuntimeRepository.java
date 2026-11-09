@@ -13,7 +13,7 @@ public interface MemberRuntimeRepository
     @Query("""
             select runtime
             from MemberRuntime runtime
-            where runtime.member.room.id = :roomId
+            where runtime.member.room.id = :roomId and runtime.member.leftAt is null
             order by runtime.member.slotNo
             """)
     List<MemberRuntime> findAllByRoomId(

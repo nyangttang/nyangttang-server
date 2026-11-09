@@ -183,6 +183,7 @@ public class RoomService {
                         "초대 코드에 해당하는 방이 없습니다."
                 ));
 
+        if (room.getClosedAt()!=null) throw new ResponseStatusException(HttpStatus.CONFLICT,"종료된 방입니다. 새 방을 만들어주세요.");
         // 방 잠금을 얻은 뒤 참가자 목록을 읽습니다.
         List<RoomMember> members =
                 roomMemberRepository.findAllByRoom_IdOrderBySlotNoAsc(

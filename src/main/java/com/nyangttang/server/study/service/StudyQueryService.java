@@ -31,23 +31,22 @@ public class StudyQueryService {
         if (dayCount < 1 || dayCount > 366) {
             throw badRequest("조회 기간은 시작일과 종료일을 포함하여 1~366일이어야 합니다.");
         }
-        var member = members.findByUser_Id(userId).orElse(null);
-        Map<LocalDate, DailyStudyStat> byDate = new HashMap<>();
-        if (member != null) {
-            for (var stat : daily.findAllByMember_IdAndStudyDateBetweenOrderByStudyDateAsc(member.getId(), from, to)) {
-                byDate.put(stat.getStudyDate(), stat);
-            }
+        Map<LocalDate,DailyStudyStat> byDate=new HashMap<>();
+        Map<LocalDate,Long> totals=new HashMap<>();
+        for(var stat:daily.findAllByMember_User_IdAndStudyDateBetweenOrderByStudyDateAscIdAsc(userId,from,to)) {
+            byDate.put(stat.getStudyDate(),stat); // Most recently created membership/day supplies the displayed goal.
+            totals.merge(stat.getStudyDate(),stat.getCreditedMs(),Math::addExact);
         }
         var result = new ArrayList<DailyStudyResponse.Day>((int) dayCount);
         long total = 0;
         for (int i = 0; i < dayCount; i++) {
             LocalDate date = from.plusDays(i);
             var stat = byDate.get(date);
-            long millis = stat == null ? 0 : stat.getCreditedMs();
+            long millis = totals.getOrDefault(date,0L);
             total = Math.addExact(total, millis);
             result.add(new DailyStudyResponse.Day(date, millis, millis / 1000,
                     stat == null ? null : stat.getGoalSeconds(),
-                    stat != null && stat.isGoalAchieved()));
+                    stat != null && millis >= stat.getGoalSeconds()*1000L));
         }
         return new DailyStudyResponse(from, to, "Asia/Seoul", total, List.copyOf(result));
     }
@@ -56,13 +55,11 @@ public class StudyQueryService {
         validateDate(date);
         if (limit < 1 || limit > 50) throw badRequest("limit은 1~50 사이여야 합니다.");
         if (beforeId != null && beforeId < 1) throw badRequest("beforeId는 양수여야 합니다.");
-        var member = members.findByUser_Id(userId).orElse(null);
-        if (member == null) return new StudySessionListResponse(List.of(), null, false);
         // Fetch one extra row to determine hasMore, without a count query.
         var page = PageRequest.of(0, limit + 1);
         List<StudySessionSummary> rows = beforeId == null
-                ? sessions.findSummaryPage(member.getId(), date, page)
-                : sessions.findSummaryPageBefore(member.getId(), date, beforeId, page);
+                ? sessions.findSummaryPage(userId, date, page)
+                : sessions.findSummaryPageBefore(userId, date, beforeId, page);
         boolean hasMore = rows.size() > limit;
         var items = rows.stream().limit(limit).map(StudySessionListResponse.Item::from).toList();
         String next = hasMore ? items.getLast().sessionId() : null;

@@ -145,10 +145,18 @@ public class StudyAccountingService {
 
     public void disconnect(Room room, RoomRuntime map, MemberRuntime runtime,
                            Instant requestedNow, boolean serverRestart) {
+        disconnect(room,map,runtime,requestedNow,serverRestart,
+                serverRestart ? StudyEndReason.SERVER_RESTART : StudyEndReason.OFFLINE);
+    }
+    public void endForManagement(Room room,RoomRuntime map,MemberRuntime runtime,Instant now,StudyEndReason reason) {
+        if(!Set.of(StudyEndReason.DEVICE_UNLINKED,StudyEndReason.DEVICE_REPLACED,StudyEndReason.ROOM_LEFT).contains(reason))
+            throw new IllegalArgumentException("관리 종료 사유가 아닙니다.");
+        disconnect(room,map,runtime,now,false,reason);
+    }
+    private void disconnect(Room room,RoomRuntime map,MemberRuntime runtime,Instant requestedNow,boolean serverRestart,StudyEndReason reason) {
         Instant now = later(requestedNow, runtime.getLastAccountedAt());
         // Restart must NOT account any interval since the last persisted checkpoint.
         Instant end = serverRestart ? runtime.getLastAccountedAt() : now;
-        StudyEndReason reason = serverRestart ? StudyEndReason.SERVER_RESTART : StudyEndReason.OFFLINE;
         List<Map<String, Object>> actions = new ArrayList<>();
         change(runtime, new StudyStateMachine.Decision(StudyState.OFFLINE, null), end, actions);
         StudySession open = open(runtime);

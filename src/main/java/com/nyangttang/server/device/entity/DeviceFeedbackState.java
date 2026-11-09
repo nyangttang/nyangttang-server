@@ -59,6 +59,11 @@ public class DeviceFeedbackState {
         return lastEvent();
     }
 
+    public void rebind(long currentRoomSeq) {
+        nextRoomSeq=Math.addExact(currentRoomSeq,1L);nextActionIndex=0;lastEventType=null;
+        // Keep the device's monotonically increasing event ID across ownership changes.
+    }
+
     public void clearGoalEvent() {
         if ("GOAL".equals(lastEventType)) lastEventType = null;
         // Preserve the ID counter: firmware must never mistake a later event for an old one.

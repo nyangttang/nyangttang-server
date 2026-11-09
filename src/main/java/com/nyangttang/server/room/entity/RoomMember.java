@@ -25,7 +25,7 @@ public class RoomMember {
     @JoinColumn(name = "room_id", nullable = false)
     private Room room;
 
-    @OneToOne(fetch = FetchType.LAZY, optional = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
@@ -64,6 +64,13 @@ public class RoomMember {
         if (seconds < 30 || seconds > 43200) throw new IllegalArgumentException("목표는 30~43200초입니다.");
         this.dailyGoalSeconds = seconds;
     }
+
+    @JdbcTypeCode(SqlTypes.TIMESTAMP)
+    @Column(name="left_at",columnDefinition="DATETIME(3)")
+    private Instant leftAt;
+    public Instant getLeftAt(){return leftAt;}
+    public boolean isActive(){return leftAt==null;}
+    public void leave(Instant at){if(leftAt==null)leftAt=Objects.requireNonNull(at);}
 
     public Long getId() { return id; }
     public Room getRoom() { return room; }

@@ -45,6 +45,12 @@ public class PhysicalDeviceService {
 
     public RegisterPhysicalDeviceResponse register(Long roomId, Long userId,
                                                    RegisterPhysicalDeviceRequest request) {
+        return bind(roomId,userId,request,null);
+    }
+    public RegisterPhysicalDeviceResponse replace(Long roomId,Long userId,RegisterPhysicalDeviceRequest request,String expectedCode) {
+        return bind(roomId,userId,request,expectedCode);
+    }
+    private RegisterPhysicalDeviceResponse bind(Long roomId,Long userId,RegisterPhysicalDeviceRequest request,String expectedCode) {
         Room room = lockRoom(roomId);
         RoomMember member = members.findAllByRoom_IdOrderBySlotNoAsc(roomId).stream()
                 .filter(m -> m.getUser().getId().equals(userId)).findFirst()
@@ -53,31 +59,43 @@ public class PhysicalDeviceService {
         if (code.startsWith("SIM-")) throw error(HttpStatus.BAD_REQUEST, "SIM-은 모의 기기 전용 코드입니다.");
         Device current = devices.findByMember_Id(member.getId()).orElse(null);
         Device existing = devices.findByDeviceCode(code).orElse(null);
-        if (existing != null && (current == null || !existing.getId().equals(current.getId()))) {
+        if (existing != null && existing.getMember()!=null && (current == null || !existing.getId().equals(current.getId()))) {
             throw error(HttpStatus.CONFLICT, "이미 사용 중인 기기 코드입니다.");
         }
+        if(expectedCode!=null && (current==null || (!current.getDeviceCode().equals(expectedCode) && !current.getDeviceCode().equals(code))))
+            throw error(HttpStatus.CONFLICT,"기기 연결이 변경되었습니다. 내 기기를 다시 조회해주세요.");
         RoomRuntime map = map(roomId);
         if (current != null && current.getSource() == DeviceSource.PHYSICAL) {
-            if (!current.getDeviceCode().equals(code)) {
+            if (!current.getDeviceCode().equals(code) && expectedCode==null) {
                 throw error(HttpStatus.CONFLICT, "이미 다른 실제 기기가 등록되어 있습니다.");
             }
-            // Idempotent retry must not reset study state or the event cursor.
-            ensureFeedback(current, map);
-            return registration(current);
+            if(current.getDeviceCode().equals(code)) {
+                // Idempotent retry must not reset study state or the event cursor.
+                ensureFeedback(current, map);
+                return registration(current);
+            }
         }
         MemberRuntime runtime = runtime(member.getId());
         Instant now = now(runtime);
-        if (current == null) {
-            byte[] random = new byte[32]; new SecureRandom().nextBytes(random);
-            // Schema placeholder only; NOT used as device authentication in this legacy protocol.
-            current = new Device(code, HexFormat.of().formatHex(random), DeviceSource.PHYSICAL);
+        // Settle the OLD device before detaching it; the whole replacement is one transaction.
+        Device previous=current;
+        if(current!=null) accounting.advance(room,map,runtime,current,now);
+        else {
+            Device empty=new Device(code,randomHash(),DeviceSource.PHYSICAL);
+            accounting.advance(room,map,runtime,empty,now);
         }
-        accounting.advance(room, map, runtime, current, now);
-        accounting.disconnect(room, map, runtime, now, false);
-        // Reuse a simulated device row: member_id is UNIQUE. All game/study records remain intact.
-        current.bindPhysical(member, code, now);
+        if(expectedCode!=null) accounting.endForManagement(room,map,runtime,now,com.nyangttang.server.study.entity.StudyEndReason.DEVICE_REPLACED);
+        else accounting.disconnect(room,map,runtime,now,false);
+        // Preserve historical physical rows and their event counters; SIM -> new physical can reuse its row.
+        boolean reuseSim=existing==null && current!=null && current.getSource()==DeviceSource.SIMULATED;
+        if(!reuseSim){
+            if(current!=null){current.unbind();devices.saveAndFlush(current);}
+            current=existing!=null?existing:new Device(code,randomHash(),DeviceSource.PHYSICAL);
+        }
+        current.bindPhysical(member,code,now);
         devices.saveAndFlush(current);
-        ensureFeedback(current, map);
+        ensureFeedback(current,map);
+        feedbackStates.findById(current.getId()).ifPresent(c->c.rebind(map.getLastEventSeq()));
         return registration(current);
     }
 
@@ -88,6 +106,7 @@ public class PhysicalDeviceService {
         Device device = devices.findByDeviceCode(code)
                 .orElseThrow(() -> error(HttpStatus.NOT_FOUND, "기기를 찾을 수 없습니다."));
         if (device.getSource() != DeviceSource.PHYSICAL || device.getMember() == null
+                || !device.getMember().isActive()
                 || !roomId.equals(device.getMember().getRoom().getId())) {
             throw error(HttpStatus.CONFLICT, "기기 연결이 변경되었습니다.");
         }
@@ -111,6 +130,7 @@ public class PhysicalDeviceService {
                 stat == null ? 0L : stat.getCreditedMs(), event);
     }
 
+    private static String randomHash(){byte[] bytes=new byte[32];new SecureRandom().nextBytes(bytes);return HexFormat.of().formatHex(bytes);}
     private void ensureFeedback(Device device, RoomRuntime map) {
         if (feedbackStates.findById(device.getId()).isEmpty()) {
             feedbackStates.save(new DeviceFeedbackState(device, map.getLastEventSeq()));

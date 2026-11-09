@@ -74,6 +74,21 @@ public class RoomRuntime {
     }
 
 
+    public List<Integer> releaseMember(String memberId) {
+        List<Integer> released=new ArrayList<>();
+        List<String> nextOwners=new ArrayList<>(owners);
+        Map<String,Map<String,Integer>> nextVisits=new HashMap<>();
+        for(int i=0;i<nextOwners.size();i++) if(memberId.equals(nextOwners.get(i))) {
+            nextOwners.set(i,null);released.add(i);
+        }
+        visits.forEach((cell,attackers)->{
+            if(released.contains(Integer.parseInt(cell)))return;
+            Map<String,Integer> remaining=new HashMap<>(attackers);remaining.remove(memberId);
+            if(!remaining.isEmpty())nextVisits.put(cell,remaining);
+        });
+        owners=nextOwners;visits=nextVisits;return List.copyOf(released);
+    }
+
     public record TerritoryChange(String type, int cellIndex, String previousOwnerId, String ownerId) {}
 
     public TerritoryChange visitCell(int x, int y, String visitorId) {

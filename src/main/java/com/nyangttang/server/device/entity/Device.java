@@ -166,6 +166,10 @@ public class Device {
         clearInput();
     }
 
+    public void unbind() {
+        member=null;claimedAt=null;clearInput();
+    }
+
     private void clearInput() {
         linkId = null;
         lastSeq = -1L;

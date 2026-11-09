@@ -15,7 +15,7 @@ public interface StudySessionRepository extends JpaRepository<StudySession, Long
             """;
 
     @org.springframework.data.jpa.repository.Query(SUMMARY_SELECT + """
-            where s.member.id = :memberId and s.studyDate = :date
+            where s.member.user.id = :memberId and s.studyDate = :date
             order by s.id desc
             """)
     java.util.List<StudySessionSummary> findSummaryPage(
@@ -24,7 +24,7 @@ public interface StudySessionRepository extends JpaRepository<StudySession, Long
             org.springframework.data.domain.Pageable page);
 
     @org.springframework.data.jpa.repository.Query(SUMMARY_SELECT + """
-            where s.member.id = :memberId and s.studyDate = :date and s.id < :beforeId
+            where s.member.user.id = :memberId and s.studyDate = :date and s.id < :beforeId
             order by s.id desc
             """)
     java.util.List<StudySessionSummary> findSummaryPageBefore(

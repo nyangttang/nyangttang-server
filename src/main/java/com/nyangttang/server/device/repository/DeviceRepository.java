@@ -15,6 +15,7 @@ public interface DeviceRepository extends JpaRepository<Device, Long> {
     @Query("select distinct d.member.room.id from Device d where d.source = :source and d.member is not null")
     List<Long> findRoomIdsBySource(@Param("source") DeviceSource source);
 
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
     Optional<Device> findByDeviceCode(String deviceCode);
     List<Device> findAllByMember_Room_IdOrderByMember_SlotNoAsc(Long roomId);
 

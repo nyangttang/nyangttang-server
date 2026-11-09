@@ -59,6 +59,12 @@ public class Room {
         this.awayGraceMs = mode == RoomMode.NORMAL ? 120_000 : 5_000;
     }
 
+    @JdbcTypeCode(SqlTypes.TIMESTAMP)
+    @Column(name="closed_at",columnDefinition="DATETIME(3)")
+    private Instant closedAt;
+    public Instant getClosedAt(){return closedAt;}
+    public void close(Instant at){if(closedAt==null)closedAt=Objects.requireNonNull(at);}
+
     public Long getId() { return id; }
     public String getName() { return name; }
     public String getInviteCode() { return inviteCode; }

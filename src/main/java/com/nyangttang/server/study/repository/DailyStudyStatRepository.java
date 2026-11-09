@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface DailyStudyStatRepository extends JpaRepository<DailyStudyStat, Long> {
+    List<DailyStudyStat> findAllByMember_User_IdAndStudyDateBetweenOrderByStudyDateAscIdAsc(Long userId,LocalDate from,LocalDate to);
     Optional<DailyStudyStat> findByMember_IdAndStudyDate(Long memberId, LocalDate studyDate);
     List<DailyStudyStat> findAllByMember_Room_IdAndStudyDate(Long roomId, LocalDate studyDate);
 
