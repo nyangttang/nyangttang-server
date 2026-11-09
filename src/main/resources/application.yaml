@@ -22,3 +22,12 @@ spring:
 
 server:
   port: 8080
+
+springdoc:
+  swagger-ui:
+    url: /openapi.json
+    disable-swagger-default-url: true
+    persist-authorization: false
+    display-request-duration: true
+    filter: true
+    doc-expansion: none
